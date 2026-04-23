@@ -102,7 +102,7 @@ function ResultadoComparativo({ resultado }) {
 
       <p>
         <strong>Melhor opção geral:</strong>{' '}
-        <span style={{ color: '#2563eb' }}>{resultado.melhorOpcao}</span>
+        <span style={{ color: '#adaeaf' }}>{resultado.melhorOpcao}</span>
       </p>
 
       <div style={{ marginTop: '24px' }}>

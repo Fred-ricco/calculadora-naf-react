@@ -3,6 +3,7 @@ import { PROFISSOES } from '../data/profissoes';
 import { validarFormulario } from '../utils/validacoes';
 import { calcularTributacao } from '../services/calculoTributario';
 import ResultadoComparativo from './ResultadoComparativo';
+import { gerarPdfBase64 } from '../services/pdfService';
 import {
   formatarMoedaInput,
   converterMoedaParaNumero
@@ -85,46 +86,77 @@ function FormCalculadora() {
     }));
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
+async function handleSubmit(event) {
+  event.preventDefault();
 
-    if (rendaExcedida) {
-      setErros((prev) => ({
-        ...prev,
-        renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
-      }));
-      setResultado(null);
-      return;
-    }
-
-    const rendaNumero = converterMoedaParaNumero(form.renda);
-
-    if (rendaNumero > LIMITE_RENDA) {
-      setRendaExcedida(true);
-      setErros((prev) => ({
-        ...prev,
-        renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
-      }));
-      setResultado(null);
-      return;
-    }
-
-    const novosErros = validarFormulario(form);
-    setErros(novosErros);
-
-    if (Object.keys(novosErros).some((chave) => novosErros[chave])) {
-      setResultado(null);
-      return;
-    }
-
-    const calculo = calcularTributacao({
-      ...form,
-      renda: rendaNumero,
-      custos: converterMoedaParaNumero(form.custos)
-    });
-
-    setResultado(calculo);
+  if (rendaExcedida) {
+    setErros((prev) => ({
+      ...prev,
+      renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
+    }));
+    setResultado(null);
+    return;
   }
+
+  const rendaNumero = converterMoedaParaNumero(form.renda);
+
+  if (rendaNumero > LIMITE_RENDA) {
+    setRendaExcedida(true);
+    setErros((prev) => ({
+      ...prev,
+      renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
+    }));
+    setResultado(null);
+    return;
+  }
+
+  const novosErros = validarFormulario(form);
+  setErros(novosErros);
+
+  if (Object.keys(novosErros).some((chave) => novosErros[chave])) {
+    setResultado(null);
+    return;
+  }
+
+  const calculo = calcularTributacao({
+    ...form,
+    renda: rendaNumero,
+    custos: converterMoedaParaNumero(form.custos)
+  });
+
+  setResultado(calculo);
+
+  if (form.enviarEmail) {
+    try {
+      const pdfBase64 = gerarPdfBase64(calculo);
+
+      const resposta = await fetch('/api/enviar-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          emailUsuario: form.emailUsuario,
+          pdfBase64,
+          profissao: form.profissao
+        })
+      });
+
+      const dados = await resposta.json();
+
+      if (!resposta.ok) {
+        console.error('Erro ao enviar e-mail:', dados);
+        alert('O cálculo foi realizado, mas houve erro ao enviar o e-mail.');
+        return;
+      }
+
+      alert('Cálculo realizado e e-mail enviado com sucesso.');
+    } catch (error) {
+      console.error('Erro ao enviar e-mail:', error);
+      alert('Cálculo realizado, mas não foi possível enviar o e-mail.');
+    }
+  }
+}
 
   return (
     <>

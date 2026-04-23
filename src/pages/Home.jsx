@@ -1,12 +1,21 @@
 import FormCalculadora from '../components/FormCalculadora';
+import ResultadoComparativo from '../components/ResultadoComparativo';
+import logo from '../assets/logo.png';
 
 function Home() {
   return (
-    <main style={{ maxWidth: '900px', margin: '0 auto', padding: '32px' }}>
-      <h1>Calculadora Web PJ e PF do NAF</h1>
-      <p>Comparar encargos tributários entre Pessoa Física e Pessoa Jurídica.</p>
+    <main className="app-container">
+      <div className="card">
 
-      <FormCalculadora />
+        <img src={logo} alt="Logo Ciências Contábeis" className="logo" />
+
+        <h1>Calculadora Web PJ e PF do NAF</h1>
+        <p>Comparar encargos tributários entre Pessoa Física e Pessoa Jurídica.</p>
+
+        <FormCalculadora />
+        <ResultadoComparativo />
+
+      </div>
     </main>
   );
 }

@@ -120,3 +120,10 @@ p {
   width: 100px; /* ou 60px */
   height: auto;
 }
+.header-text h1 {
+  color: #ffffff; /* ou qualquer cor */
+}
+
+.header-text p {
+  color: #d1d5db; /* um cinza claro, por exemplo */
+}

@@ -9,8 +9,10 @@ function Home() {
 
         <img src={logo} alt="Logo Ciências Contábeis" className="logo" />
 
-        <h1>Calculadora Web PJ e PF do NAF</h1>
-        <p>Comparar encargos tributários entre Pessoa Física e Pessoa Jurídica.</p>
+        <div className="header-text">
+          <h1>Calculadora Web PJ e PF do NAF</h1>
+          <p>Comparar encargos tributários entre Pessoa Física e Pessoa Jurídica.</p>
+        </div>
 
         <FormCalculadora />
         <ResultadoComparativo />

@@ -1,6 +1,7 @@
 import FormCalculadora from '../components/FormCalculadora';
 import ResultadoComparativo from '../components/ResultadoComparativo';
 import logo from '../assets/logo.png';
+import FAQ from '../components/FAQ'
 
 function Home() {
   return (
@@ -16,6 +17,7 @@ function Home() {
 
         <FormCalculadora />
         <ResultadoComparativo />
+        <FAQ />
 
       </div>
     </main>

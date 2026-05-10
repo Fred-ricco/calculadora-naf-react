@@ -30,6 +30,7 @@ Funcionalidades:
 * Destaque da melhor opção
 * Cálculo da economia
 * Geração de relatório em PDF
+* FAQ interativo 
 
 ----------------------------------------------------------------------------------------------------
 

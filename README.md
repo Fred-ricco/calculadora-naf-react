@@ -37,7 +37,7 @@ Funcionalidades:
 Acesso ao sistema:
 
 Aplicação publicada em:
-https://calculadora-naf-react-i5xb.vercel.app/
+https://calculadora-naf-react.vercel.app/
 
 ----------------------------------------------------------------------------------------------------
 

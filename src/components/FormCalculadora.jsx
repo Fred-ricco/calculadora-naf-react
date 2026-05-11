@@ -195,6 +195,7 @@ async function handleSubmit(event) {
             value={form.custos}
             onChange={handleChange}
             placeholder="R$ 0,00"
+            inputMode="numeric"
           />
           {erros.custos && <p style={{ color: 'red' }}>{erros.custos}</p>}
         </div>

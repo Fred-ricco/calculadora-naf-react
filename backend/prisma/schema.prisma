@@ -8,9 +8,26 @@ datasource db {
 }
 
 model Usuario {
-  id        String   @id @default(cuid())
-  nome      String
-  email     String   @unique
-  senha     String
-  createdAt DateTime @default(now())
+  id          String    @id @default(cuid())
+  nome        String
+  email       String    @unique
+  senha       String
+  createdAt   DateTime  @default(now())
+
+  calculos    HistoricoCalculo[]
+}
+
+model HistoricoCalculo {
+  id           String   @id @default(cuid())
+  profissao    String
+  renda        Float
+  custos       Float
+  resultadoPF  Json
+  resultadoPJ  Json
+  economia     Float
+
+  usuarioId    String
+  usuario      Usuario @relation(fields: [usuarioId], references: [id])
+
+  createdAt    DateTime @default(now())
 }

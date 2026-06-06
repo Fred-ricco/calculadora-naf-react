@@ -197,3 +197,43 @@ p {
     transform: translateY(0);
   }
 }
+.menu-telas {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.historico-container {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 16px;
+  margin-top: 20px;
+}
+
+.historico-lista {
+  display: grid;
+  gap: 16px;
+}
+
+.historico-item {
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f9fafb;
+}
+
+.historico-item h3 {
+  margin-top: 0;
+  text-align: center;
+}
+
+.historico-item p {
+  text-align: left;
+  margin-bottom: 10px;
+}
+
+.mensagem-erro {
+  color: #b91c1c;
+  font-weight: bold;
+}

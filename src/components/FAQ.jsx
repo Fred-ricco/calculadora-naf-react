@@ -1,71 +1,169 @@
-import { useState } from 'react'
+import { useState } from 'react';
+
+const categorias = [
+  {
+    id: 'primeiros-passos',
+    titulo: 'Primeiros passos',
+    icone: '📘',
+    descricao: 'Entenda como usar a calculadora NAF.',
+    perguntas: [
+      'O que é o NAF?',
+      'O que é a calculadora NAF?',
+      'Quem pode usar a calculadora?'
+    ]
+  },
+  {
+    id: 'simulacao',
+    titulo: 'Simulação tributária',
+    icone: '🧮',
+    descricao: 'Veja como os cálculos são feitos.',
+    perguntas: [
+      'Os cálculos são oficiais?',
+      'Quais profissões são aceitas?',
+      'O que significa PF e PJ?'
+    ]
+  },
+  {
+    id: 'relatorios',
+    titulo: 'Relatórios',
+    icone: '📄',
+    descricao: 'Gere e envie seus resultados.',
+    perguntas: [
+      'Posso gerar PDF?',
+      'Consigo enviar por e-mail?',
+      'O relatório fica salvo?'
+    ]
+  },
+  {
+    id: 'seguranca',
+    titulo: 'Segurança e acesso',
+    icone: '🔐',
+    descricao: 'Informações sobre dados e login.',
+    perguntas: [
+      'O sistema salva meus dados?',
+      'Preciso estar logado?',
+      'Consigo acessar pelo celular?'
+    ]
+  }
+];
+
+const respostas = {
+  'O que é o NAF?':
+    'O NAF é o Núcleo de Apoio Contábil e Fiscal, uma iniciativa acadêmica voltada à orientação fiscal e cidadã.',
+  'O que é a calculadora NAF?':
+    'É uma ferramenta acadêmica que simula comparativos tributários entre atuação como Pessoa Física e Pessoa Jurídica.',
+  'Quem pode usar a calculadora?':
+    'A calculadora pode ser usada por estudantes, professores e usuários interessados em compreender uma estimativa tributária.',
+  'Os cálculos são oficiais?':
+    'Não. Os cálculos são estimativas acadêmicas e não substituem a análise de um contador ou profissional habilitado.',
+  'Quais profissões são aceitas?':
+    'Nesta versão, a calculadora aceita Psicólogo, Arquiteto e Advogado.',
+  'O que significa PF e PJ?':
+    'PF significa Pessoa Física. PJ significa Pessoa Jurídica. A calculadora compara os tributos estimados entre essas duas formas de atuação.',
+  'Posso gerar PDF?':
+    'Sim. Após realizar a simulação, o sistema permite baixar um relatório em PDF com os dados do comparativo.',
+  'Consigo enviar por e-mail?':
+    'Sim. Se a opção estiver configurada no projeto, o relatório pode ser enviado ao e-mail informado pelo usuário.',
+  'O relatório fica salvo?':
+    'O resultado do cálculo é salvo no histórico do usuário autenticado quando a simulação é feita pelo backend.',
+  'O sistema salva meus dados?':
+    'O sistema salva o histórico de cálculos do usuário autenticado, conforme a integração com o backend.',
+  'Preciso estar logado?':
+    'Sim. As rotas de cálculo e histórico são protegidas por token JWT.',
+  'Consigo acessar pelo celular?':
+    'Sim. A interface foi ajustada para funcionar também em telas menores.'
+};
 
 function FAQ() {
-  const [aberta, setAberta] = useState(null)
+  const [categoriaAtiva, setCategoriaAtiva] = useState(null);
+  const [perguntaAberta, setPerguntaAberta] = useState(null);
 
-  const perguntas = [
-    {
-      pergunta: 'O que é o NAF?',
-      resposta:
-        'NAF, significa Núcleo de Apoio Contábil e Fiscal, um projeto de orientação fiscal e contábil à comunidade.'
-    },
-    {
-      pergunta: 'O que é a calculadora NAF?',
-      resposta:
-        'É uma ferramenta para comparar cenários tributários e auxiliar na tomada de decisão.'
-    },
-    {
-      pergunta: 'Os cálculos são oficiais?',
-      resposta:
-        'Os resultados são estimativas e recomenda-se procurar um profissional da área contábil para análise.'
-    },
-    {
-      pergunta: 'Posso gerar PDF?',
-      resposta:
-        'Sim, o sistema possui funcionalidade de geração de PDF.'
-    },
-    {
-      pergunta: 'O sistema salva meus dados?',
-      resposta:
-        'Não, as informações preenchidas são utilizadas apenas para realizar os cálculos.'
-    },
-    {
-      pergunta: 'Consigo acessar a calculadora pelo celular?',
-      resposta:
-        'Sim, a aplicação foi desenvolvida para funcionar em computadores e dispositivos móveis.'
+  function selecionarCategoria(categoria) {
+    if (categoriaAtiva?.id === categoria.id) {
+      setCategoriaAtiva(null);
+      setPerguntaAberta(null);
+      return;
     }
-  ]
 
-  const togglePergunta = (index) => {
-    setAberta(aberta === index ? null : index)
+    setCategoriaAtiva(categoria);
+    setPerguntaAberta(null);
+  }
+
+  function alternarPergunta(pergunta) {
+    setPerguntaAberta((atual) => (atual === pergunta ? null : pergunta));
   }
 
   return (
-    <section className="faq-container">
-      <h2>Perguntas Frequentes</h2>
+    <section className="faq-help-center">
+      <div className="faq-header">
+        <span className="faq-tag">Central de ajuda</span>
 
-      {perguntas.map((item, index) => (
-        <div key={index} className="faq-item">
+        <h2>Perguntas frequentes</h2>
+
+        <p>
+          Encontre respostas rápidas sobre o uso da calculadora, geração de PDF,
+          envio por e-mail e segurança dos dados.
+        </p>
+      </div>
+
+      <div className="faq-cards">
+        {categorias.map((categoria) => (
           <button
-            className="faq-pergunta"
-            onClick={() => togglePergunta(index)}
+            type="button"
+            className={`faq-card ${
+              categoriaAtiva?.id === categoria.id ? 'ativo' : ''
+            }`}
+            key={categoria.id}
+            onClick={() => selecionarCategoria(categoria)}
           >
-            <span>{item.pergunta}</span>
+            <div className="faq-card-icone">{categoria.icone}</div>
 
-            <span>
-              {aberta === index ? '−' : '+'}
-            </span>
+            <h3>{categoria.titulo}</h3>
+
+            <p>{categoria.descricao}</p>
           </button>
+        ))}
+      </div>
 
-          {aberta === index && (
-            <p className="faq-resposta">
-              {item.resposta}
-            </p>
-          )}
+      {!categoriaAtiva && (
+        <p className="faq-placeholder">
+          Selecione uma categoria acima para visualizar as perguntas frequentes.
+        </p>
+      )}
+
+      {categoriaAtiva && (
+        <div className="faq-painel">
+          <div className="faq-painel-info">
+            <span className="faq-painel-tag">Categoria selecionada</span>
+
+            <h3>{categoriaAtiva.titulo}</h3>
+
+            <p>{categoriaAtiva.descricao}</p>
+          </div>
+
+          <div className="faq-lista-perguntas">
+            {categoriaAtiva.perguntas.map((pergunta) => (
+              <div className="faq-link-item" key={pergunta}>
+                <button
+                  type="button"
+                  onClick={() => alternarPergunta(pergunta)}
+                >
+                  <span>{pergunta}</span>
+                  <strong>{perguntaAberta === pergunta ? '−' : '+'}</strong>
+                </button>
+
+                {perguntaAberta === pergunta && (
+                  <p className="faq-link-resposta">
+                    {respostas[pergunta]}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
+      )}
     </section>
-  )
+  );
 }
 
-export default FAQ
+export default FAQ;

@@ -1,236 +1,186 @@
-import { formatarMoeda } from '../utils/formatadores';
-import { gerarPdfComparativo } from '../services/pdfService';
+import { formatarMoeda, formatarProfissao } from '../utils/formatadores';
+import { gerarPdf } from '../services/pdfService';
+
+function obterValor(objeto, caminho, valorPadrao = 0) {
+  return caminho.reduce((valorAtual, chave) => {
+    if (valorAtual && valorAtual[chave] !== undefined) {
+      return valorAtual[chave];
+    }
+
+    return undefined;
+  }, objeto) ?? valorPadrao;
+}
 
 function ResultadoComparativo({ resultado }) {
   if (!resultado) {
     return null;
   }
 
-  const completa = resultado.pf.completa;
-  const simplificada = resultado.pf.simplificada;
+  const completa = resultado.pf?.completa || {};
+  const simplificada = resultado.pf?.simplificada || {};
+  const pj = resultado.pj || {};
+
+  const modalidadeMaisVantajosa =
+    resultado.pf?.modalidadeMaisVantajosa || 'Não informada';
 
   const completaVantajosa =
-    resultado.pf.modalidadeMaisVantajosa === 'Declaração completa';
+    modalidadeMaisVantajosa.toLowerCase().includes('completa');
 
   const simplificadaVantajosa =
-    resultado.pf.modalidadeMaisVantajosa === 'Declaração simplificada';
+    modalidadeMaisVantajosa.toLowerCase().includes('simplificada');
 
   return (
-    <section
-      style={{
-        background: '#ffffff',
-        padding: '24px',
-        borderRadius: '12px',
-        marginTop: '24px'
-      }}
-    >
-      <h2>Resultado do Comparativo</h2>
+    <section className="resultado-comparativo">
+      <div className="resultado-cabecalho">
+        <div>
+          <p className="resultado-subtitulo">Resultado da simulação</p>
+          <h2>Comparativo Tributário</h2>
+        </div>
 
-      <p>
-        <strong>Profissão:</strong> {resultado.profissao}
-      </p>
+        <span className="badge-economia">
+          Economia geral: {formatarMoeda(resultado.economiaGeral)}
+        </span>
+      </div>
 
-      <p>
-        <strong>Renda Mensal:</strong>{' '}
-        {formatarMoeda(resultado.renda)}
-      </p>
+      <div className="resumo-simulacao">
+        <p className="linha-resultado">
+          <strong>Profissão</strong>
+          <span>{formatarProfissao(resultado.profissao)}</span>
+        </p>
 
-      <p>
-        <strong>Custos Mensais:</strong>{' '}
-        {formatarMoeda(resultado.custos)}
-      </p>
+        <p className="linha-resultado">
+          <strong>Renda mensal</strong>
+          <span>{formatarMoeda(resultado.renda)}</span>
+        </p>
 
-      <hr style={{ margin: '20px 0' }} />
+        <p className="linha-resultado">
+          <strong>Custos mensais</strong>
+          <span>{formatarMoeda(resultado.custos)}</span>
+        </p>
+      </div>
 
-      <h3>Pessoa Física</h3>
+      <div className="bloco-resultado">
+        <h3>Pessoa Física</h3>
 
-      <div
-        style={{
-          border: completaVantajosa
-            ? '2px solid #16a34a'
-            : '1px solid #d1d5db',
+        <div className="grid-modalidades">
+          <div className={`card-modalidade ${completaVantajosa ? 'vantajosa' : ''}`}>
+            <h4>
+              Declaração completa
+              {completaVantajosa && <span>Mais vantajosa</span>}
+            </h4>
 
-          borderRadius: '10px',
-          padding: '16px',
-          marginBottom: '16px',
+            <p className="linha-resultado">
+              <strong>Base de cálculo</strong>
+              <span>{formatarMoeda(completa.baseCalculo)}</span>
+            </p>
 
-          background: completaVantajosa
-            ? '#f0fdf4'
-            : '#ffffff'
-        }}
+            <p className="linha-resultado">
+              <strong>Imposto pela tabela</strong>
+              <span>{formatarMoeda(completa.impostoTabela)}</span>
+            </p>
+
+            <p className="linha-resultado">
+              <strong>Redutor 2026</strong>
+              <span>{formatarMoeda(completa.redutor)}</span>
+            </p>
+
+            <p className="linha-resultado destaque">
+              <strong>IRRF devido</strong>
+              <span>{formatarMoeda(completa.impostoDevido)}</span>
+            </p>
+          </div>
+
+          <div className={`card-modalidade ${simplificadaVantajosa ? 'vantajosa' : ''}`}>
+            <h4>
+              Declaração simplificada
+              {simplificadaVantajosa && <span>Mais vantajosa</span>}
+            </h4>
+
+            <p className="linha-resultado">
+              <strong>Base de cálculo</strong>
+              <span>{formatarMoeda(simplificada.baseCalculo)}</span>
+            </p>
+
+            <p className="linha-resultado">
+              <strong>Imposto pela tabela</strong>
+              <span>{formatarMoeda(simplificada.impostoTabela)}</span>
+            </p>
+
+            <p className="linha-resultado">
+              <strong>Redutor 2026</strong>
+              <span>{formatarMoeda(simplificada.redutor)}</span>
+            </p>
+
+            <p className="linha-resultado destaque">
+              <strong>IRRF devido</strong>
+              <span>{formatarMoeda(simplificada.impostoDevido)}</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="resumo-simulacao compacto">
+          <p className="linha-resultado">
+            <strong>Modalidade mais vantajosa</strong>
+            <span>{modalidadeMaisVantajosa}</span>
+          </p>
+
+          <p className="linha-resultado destaque">
+            <strong>Total PF</strong>
+            <span>{formatarMoeda(resultado.pf?.totalTributos)}</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="bloco-resultado">
+        <h3>Pessoa Jurídica</h3>
+
+        <div className="resumo-simulacao">
+          <p className="linha-resultado">
+            <strong>Anexo</strong>
+            <span>{pj.anexo || '-'}</span>
+          </p>
+
+          <p className="linha-resultado">
+            <strong>DAS</strong>
+            <span>{formatarMoeda(pj.das)}</span>
+          </p>
+
+          <p className="linha-resultado">
+            <strong>Pró-labore</strong>
+            <span>{formatarMoeda(pj.proLabore)}</span>
+          </p>
+
+          <p className="linha-resultado">
+            <strong>INSS sócio</strong>
+            <span>{formatarMoeda(pj.inssSocio)}</span>
+          </p>
+
+          <p className="linha-resultado">
+            <strong>CPP</strong>
+            <span>{formatarMoeda(pj.cpp)}</span>
+          </p>
+
+          <p className="linha-resultado destaque">
+            <strong>Total PJ</strong>
+            <span>{formatarMoeda(pj.totalTributos)}</span>
+          </p>
+        </div>
+      </div>
+
+      <div className="resultado-final">
+        <p className="linha-resultado destaque">
+          <strong>Melhor opção geral</strong>
+          <span>{resultado.melhorOpcao || '-'}</span>
+        </p>
+      </div>
+
+      <button
+        type="button"
+        className="botao-pdf"
+        onClick={() => gerarPdf(resultado)}
       >
-        <h4>
-          Declaração completa
-
-          {completaVantajosa && (
-            <span
-              style={{
-                color: '#16a34a',
-                marginLeft: '8px'
-              }}
-            >
-              (Mais vantajosa)
-            </span>
-          )}
-        </h4>
-
-        <p>
-          <strong>Base de cálculo:</strong>{' '}
-          {formatarMoeda(completa.baseCalculo)}
-        </p>
-
-        <p>
-          <strong>Imposto pela tabela:</strong>{' '}
-          {formatarMoeda(completa.impostoTabela)}
-        </p>
-
-        <p>
-          <strong>Redutor 2026:</strong>{' '}
-          {formatarMoeda(completa.redutor)}
-        </p>
-
-        <p>
-          <strong>IRRF devido:</strong>{' '}
-          {formatarMoeda(completa.impostoDevido)}
-        </p>
-      </div>
-
-      <div
-        style={{
-          border: simplificadaVantajosa
-            ? '2px solid #16a34a'
-            : '1px solid #d1d5db',
-
-          borderRadius: '10px',
-          padding: '16px',
-          marginBottom: '16px',
-
-          background: simplificadaVantajosa
-            ? '#f0fdf4'
-            : '#ffffff'
-        }}
-      >
-        <h4>
-          Declaração simplificada
-
-          {simplificadaVantajosa && (
-            <span
-              style={{
-                color: '#16a34a',
-                marginLeft: '8px'
-              }}
-            >
-              (Mais vantajosa)
-            </span>
-          )}
-        </h4>
-
-        <p>
-          <strong>Base de cálculo:</strong>{' '}
-          {formatarMoeda(simplificada.baseCalculo)}
-        </p>
-
-        <p>
-          <strong>Imposto pela tabela:</strong>{' '}
-          {formatarMoeda(simplificada.impostoTabela)}
-        </p>
-
-        <p>
-          <strong>Redutor 2026:</strong>{' '}
-          {formatarMoeda(simplificada.redutor)}
-        </p>
-
-        <p>
-          <strong>IRRF devido:</strong>{' '}
-          {formatarMoeda(simplificada.impostoDevido)}
-        </p>
-      </div>
-
-      <p>
-        <strong>Modalidade mais vantajosa:</strong>{' '}
-        <span style={{ color: '#2563eb' }}>
-          {resultado.pf.modalidadeMaisVantajosa}
-        </span>
-      </p>
-
-      <p>
-        <strong>Economia obtida:</strong>{' '}
-        <span style={{ color: '#16a34a' }}>
-          {formatarMoeda(resultado.pf.economia)}
-        </span>
-      </p>
-
-      <p>
-        <strong>Total PF:</strong>{' '}
-        {formatarMoeda(resultado.pf.totalTributos)}
-      </p>
-
-      <hr style={{ margin: '20px 0' }} />
-
-      <h3>Pessoa Jurídica</h3>
-
-      <p>
-        <strong>Pró-labore:</strong>{' '}
-        {formatarMoeda(resultado.pj.proLabore)}
-      </p>
-
-      <p>
-        <strong>DAS:</strong>{' '}
-        {formatarMoeda(resultado.pj.das)}
-      </p>
-
-      <p>
-        <strong>INSS sócio:</strong>{' '}
-        {formatarMoeda(resultado.pj.inssSocio)}
-      </p>
-
-      <p>
-        <strong>CPP:</strong>{' '}
-        {formatarMoeda(resultado.pj.cpp)}
-      </p>
-
-      <p>
-        <strong>IRRF pró-labore:</strong>{' '}
-        {formatarMoeda(resultado.pj.irrf)}
-      </p>
-
-      <p>
-        <strong>Total PJ:</strong>{' '}
-        {formatarMoeda(resultado.pj.totalTributos)}
-      </p>
-
-      <hr style={{ margin: '20px 0' }} />
-
-      <p>
-        <strong>Melhor opção geral:</strong>{' '}
-        <span style={{ color: '#2563eb' }}>
-          {resultado.melhorOpcao}
-        </span>
-      </p>
-
-      <p>
-        <strong>Economia geral:</strong>{' '}
-        <span style={{ color: '#16a34a' }}>
-          {formatarMoeda(resultado.economiaGeral)}
-        </span>
-      </p>
-
-      <div style={{ marginTop: '24px' }}>
-        <button
-          type="button"
-          onClick={() => gerarPdfComparativo(resultado)}
-          style={{
-            backgroundColor: '#059669',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '8px',
-            padding: '12px 18px',
-            cursor: 'pointer'
-          }}
-        >
-          Baixar PDF
-        </button>
-      </div>
+        Baixar PDF acadêmico
+      </button>
     </section>
   );
 }

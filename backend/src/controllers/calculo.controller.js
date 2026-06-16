@@ -2,13 +2,9 @@ const calculoService = require('../services/calculo.service');
 
 async function simular(req, res) {
   try {
-    console.log('BODY RECEBIDO:', req.body);
-    console.log('USUARIO:', req.usuario);
+    const usuarioId = req.usuario.id;
 
-    const resultado = await calculoService.simularESalvar(
-      req.body,
-      req.usuario.id
-    );
+    const resultado = await calculoService.simularESalvar(req.body, usuarioId);
 
     return res.status(201).json(resultado);
   } catch (error) {
@@ -20,7 +16,10 @@ async function simular(req, res) {
 
 async function listar(req, res) {
   try {
-    const calculos = await calculoService.listar(req.usuario.id);
+    const usuarioId = req.usuario.id;
+
+    const calculos = await calculoService.listar(usuarioId);
+
     return res.json(calculos);
   } catch (error) {
     return res.status(400).json({

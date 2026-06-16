@@ -2,20 +2,10 @@ const prisma = require('../config/prisma');
 const { calcularTributacao } = require('./calculoTributario.service');
 
 async function simularESalvar(dados, usuarioId) {
-  console.log('DADOS NO SERVICE:', dados);
-
-  const renda = Number(dados.renda);
-  const custos = Number(dados.custos || 0);
-  const profissao = dados.profissao;
-
-  if (!renda || Number.isNaN(renda)) {
-    throw new Error('Informe uma renda válida.');
-  }
-
   const resultado = calcularTributacao({
-    renda,
-    custos,
-    profissao
+    renda: Number(dados.renda),
+    custos: Number(dados.custos || 0),
+    profissao: dados.profissao
   });
 
   const calculo = await prisma.historicoCalculo.create({
@@ -25,7 +15,7 @@ async function simularESalvar(dados, usuarioId) {
       custos: resultado.custos,
       resultadoPF: resultado.pf,
       resultadoPJ: resultado.pj,
-      economia: resultado.economiaGeral || 0,
+      economia: resultado.economiaGeral,
       usuarioId
     }
   });
@@ -38,8 +28,12 @@ async function simularESalvar(dados, usuarioId) {
 
 async function listar(usuarioId) {
   return prisma.historicoCalculo.findMany({
-    where: { usuarioId },
-    orderBy: { createdAt: 'desc' }
+    where: {
+      usuarioId
+    },
+    orderBy: {
+      createdAt: 'desc'
+    }
   });
 }
 

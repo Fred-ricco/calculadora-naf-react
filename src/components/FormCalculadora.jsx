@@ -30,27 +30,23 @@ function FormCalculadora() {
     const { name, value, type, checked } = event.target;
 
     if (name === 'renda') {
-      const valorFormatadoTentativa = formatarMoedaInput(value);
-      const valorDigitado = converterMoedaParaNumero(valorFormatadoTentativa);
+      const valorFormatado = formatarMoedaInput(value);
+      const valorDigitado = converterMoedaParaNumero(valorFormatado);
 
       setForm((prev) => ({
         ...prev,
-        renda: valorFormatadoTentativa
+        renda: valorFormatado
       }));
 
       if (valorDigitado > LIMITE_RENDA) {
         setRendaExcedida(true);
-
         setErros((prev) => ({
           ...prev,
           renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
         }));
-
         setResultado(null);
-
       } else {
         setRendaExcedida(false);
-
         setErros((prev) => ({
           ...prev,
           renda: ''
@@ -61,20 +57,16 @@ function FormCalculadora() {
     }
 
     if (name === 'custos') {
-      const valorFormatado = formatarMoedaInput(value);
-
       setForm((prev) => ({
         ...prev,
-        custos: valorFormatado
+        custos: formatarMoedaInput(value)
       }));
 
       return;
     }
 
     if (name === 'mensagemNAF') {
-      if (value.length > LIMITE_MENSAGEM_NAF) {
-        return;
-      }
+      if (value.length > LIMITE_MENSAGEM_NAF) return;
 
       setForm((prev) => ({
         ...prev,
@@ -86,131 +78,90 @@ function FormCalculadora() {
 
     setForm((prev) => ({
       ...prev,
-      [name]: type === 'checkbox'
-        ? checked
-        : value
+      [name]: type === 'checkbox' ? checked : value
     }));
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (rendaExcedida) {
-      setErros((prev) => ({
-        ...prev,
-        renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
-      }));
-
-      setResultado(null);
-
-      return;
-    }
-
     const rendaNumero = converterMoedaParaNumero(form.renda);
+    const custosNumero = converterMoedaParaNumero(form.custos);
 
     if (rendaNumero > LIMITE_RENDA) {
       setRendaExcedida(true);
-
       setErros((prev) => ({
         ...prev,
         renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
       }));
-
       setResultado(null);
-
       return;
     }
 
     const novosErros = validarFormulario(form);
-
     setErros(novosErros);
 
-    if (
-      Object.keys(novosErros).some(
-        (chave) => novosErros[chave]
-      )
-    ) {
+    if (Object.keys(novosErros).some((chave) => novosErros[chave])) {
       setResultado(null);
-
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
 
-      const response = await api.post(
-        '/calculos/simular',
-        {
-          profissao: form.profissao,
-          renda: rendaNumero,
-          custos: converterMoedaParaNumero(form.custos)
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+     const response = await api.post(
+  '/calculos/simular',
+  {
+    profissao: form.profissao,
+    renda: rendaNumero,
+    custos: custosNumero
+  },
+  {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  }
+);
 
-      setResultado(response.data.resultado);
+      setResultado(response.data);
 
       if (form.enviarEmail) {
         try {
-          const pdfBase64 = gerarPdfBase64(
-            response.data.resultado
-          );
+          const dadosResultado = response.data?.resultado || response.data;
+          const pdfBase64 = gerarPdfBase64(dadosResultado);
 
-          const resposta = await fetch(
-            '/api/enviar-email',
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                emailUsuario: form.emailUsuario,
-                pdfBase64,
-                profissao: form.profissao
-              })
-            }
-          );
+          const resposta = await fetch('/api/enviar-email', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              emailUsuario: form.emailUsuario,
+              pdfBase64,
+              profissao: form.profissao
+            })
+          });
 
           const dados = await resposta.json();
 
           if (!resposta.ok) {
-            console.error(
-              'Erro ao enviar e-mail:',
-              dados
-            );
-
-            alert(
-              'O cálculo foi realizado, mas houve erro ao enviar o e-mail.'
-            );
-
+            console.error('Erro ao enviar e-mail:', dados);
+            alert('O cálculo foi realizado, mas houve erro ao enviar o e-mail.');
             return;
           }
 
-          alert(
-            'Cálculo realizado e e-mail enviado com sucesso.'
-          );
-
+          alert('Cálculo realizado e e-mail enviado com sucesso.');
         } catch (error) {
-          console.error(
-            'Erro ao enviar e-mail:',
-            error
-          );
-
-          alert(
-            'Cálculo realizado, mas não foi possível enviar o e-mail.'
-          );
+          console.error('Erro ao enviar e-mail:', error);
+          alert('Cálculo realizado, mas não foi possível enviar o e-mail.');
         }
       }
-
     } catch (error) {
       console.error(error);
 
       alert(
         error.response?.data?.erro ||
+        error.message ||
         'Erro ao realizar cálculo.'
       );
 
@@ -220,14 +171,9 @@ function FormCalculadora() {
 
   return (
     <>
-      <form
-        onSubmit={handleSubmit}
-        style={{ marginTop: '20px' }}
-      >
+      <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
         <div>
-          <label>
-            Renda mensal (valor bruto)
-          </label>
+          <label>Renda mensal (valor bruto)</label>
 
           <input
             type="text"
@@ -237,9 +183,7 @@ function FormCalculadora() {
             placeholder="R$ 0,00"
             inputMode="numeric"
             style={{
-              border: erros.renda
-                ? '1px solid red'
-                : '1px solid #ccc'
+              border: erros.renda ? '1px solid red' : '1px solid #ccc'
             }}
           />
 
@@ -254,17 +198,11 @@ function FormCalculadora() {
             Limite máximo: R$ 15.000,00
           </small>
 
-          {erros.renda && (
-            <p style={{ color: 'red' }}>
-              {erros.renda}
-            </p>
-          )}
+          {erros.renda && <p style={{ color: 'red' }}>{erros.renda}</p>}
         </div>
 
         <div>
-          <label>
-            Total de custos mensais
-          </label>
+          <label>Total de custos mensais</label>
 
           <input
             type="text"
@@ -275,11 +213,7 @@ function FormCalculadora() {
             inputMode="numeric"
           />
 
-          {erros.custos && (
-            <p style={{ color: 'red' }}>
-              {erros.custos}
-            </p>
-          )}
+          {erros.custos && <p style={{ color: 'red' }}>{erros.custos}</p>}
         </div>
 
         <div>
@@ -290,25 +224,16 @@ function FormCalculadora() {
             value={form.profissao}
             onChange={handleChange}
           >
-            <option value="">
-              Selecione
-            </option>
+            <option value="">Selecione</option>
 
             {PROFISSOES.map((profissao) => (
-              <option
-                key={profissao.value}
-                value={profissao.value}
-              >
+              <option key={profissao.value} value={profissao.value}>
                 {profissao.label}
               </option>
             ))}
           </select>
 
-          {erros.profissao && (
-            <p style={{ color: 'red' }}>
-              {erros.profissao}
-            </p>
-          )}
+          {erros.profissao && <p style={{ color: 'red' }}>{erros.profissao}</p>}
         </div>
 
         <div style={{ marginBottom: '16px' }}>
@@ -330,9 +255,7 @@ function FormCalculadora() {
 
         {form.enviarEmail && (
           <div>
-            <label>
-              E-mail do usuário
-            </label>
+            <label>E-mail do usuário</label>
 
             <input
               type="email"
@@ -342,17 +265,13 @@ function FormCalculadora() {
             />
 
             {erros.emailUsuario && (
-              <p style={{ color: 'red' }}>
-                {erros.emailUsuario}
-              </p>
+              <p style={{ color: 'red' }}>{erros.emailUsuario}</p>
             )}
           </div>
         )}
 
         <div>
-          <label>
-            Mensagem para o NAF
-          </label>
+          <label>Mensagem para o NAF</label>
 
           <textarea
             name="mensagemNAF"
@@ -375,16 +294,12 @@ function FormCalculadora() {
               color: '#6b7280'
             }}
           >
-            Máximo de {LIMITE_MENSAGEM_NAF} caracteres.
-            {' '}
-            {form.mensagemNAF.length}/
-            {LIMITE_MENSAGEM_NAF}
+            Máximo de {LIMITE_MENSAGEM_NAF} caracteres.{' '}
+            {form.mensagemNAF.length}/{LIMITE_MENSAGEM_NAF}
           </small>
 
           {erros.mensagemNAF && (
-            <p style={{ color: 'red' }}>
-              {erros.mensagemNAF}
-            </p>
+            <p style={{ color: 'red' }}>{erros.mensagemNAF}</p>
           )}
         </div>
 
@@ -393,9 +308,7 @@ function FormCalculadora() {
           disabled={rendaExcedida}
           style={{
             opacity: rendaExcedida ? 0.6 : 1,
-            cursor: rendaExcedida
-              ? 'not-allowed'
-              : 'pointer'
+            cursor: rendaExcedida ? 'not-allowed' : 'pointer'
           }}
         >
           Calcular

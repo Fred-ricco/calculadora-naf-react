@@ -2,18 +2,24 @@ import { formatarMoeda } from '../utils/formatadores';
 import { gerarPdfComparativo } from '../services/pdfService';
 
 function ResultadoComparativo({ resultado }) {
-  if (!resultado) {
+  const dados = resultado?.resultado || resultado;
+
+  if (!dados) {
     return null;
   }
 
-  const completa = resultado.pf.completa;
-  const simplificada = resultado.pf.simplificada;
+  const completa = dados.pf?.completa;
+  const simplificada = dados.pf?.simplificada;
+
+  if (!dados.renda || !dados.pf || !dados.pj || !completa || !simplificada) {
+    return null;
+  }
 
   const completaVantajosa =
-    resultado.pf.modalidadeMaisVantajosa === 'Declaração completa';
+    dados.pf.modalidadeMaisVantajosa === 'Declaração completa';
 
   const simplificadaVantajosa =
-    resultado.pf.modalidadeMaisVantajosa === 'Declaração simplificada';
+    dados.pf.modalidadeMaisVantajosa === 'Declaração simplificada';
 
   return (
     <section
@@ -27,17 +33,17 @@ function ResultadoComparativo({ resultado }) {
       <h2>Resultado do Comparativo</h2>
 
       <p>
-        <strong>Profissão:</strong> {resultado.profissao}
+        <strong>Profissão:</strong> {dados.profissao}
       </p>
 
       <p>
         <strong>Renda Mensal:</strong>{' '}
-        {formatarMoeda(resultado.renda)}
+        {formatarMoeda(dados.renda)}
       </p>
 
       <p>
         <strong>Custos Mensais:</strong>{' '}
-        {formatarMoeda(resultado.custos)}
+        {formatarMoeda(dados.custos)}
       </p>
 
       <hr style={{ margin: '20px 0' }} />
@@ -49,26 +55,16 @@ function ResultadoComparativo({ resultado }) {
           border: completaVantajosa
             ? '2px solid #16a34a'
             : '1px solid #d1d5db',
-
           borderRadius: '10px',
           padding: '16px',
           marginBottom: '16px',
-
-          background: completaVantajosa
-            ? '#f0fdf4'
-            : '#ffffff'
+          background: completaVantajosa ? '#f0fdf4' : '#ffffff'
         }}
       >
         <h4>
           Declaração completa
-
           {completaVantajosa && (
-            <span
-              style={{
-                color: '#16a34a',
-                marginLeft: '8px'
-              }}
-            >
+            <span style={{ color: '#16a34a', marginLeft: '8px' }}>
               (Mais vantajosa)
             </span>
           )}
@@ -100,26 +96,16 @@ function ResultadoComparativo({ resultado }) {
           border: simplificadaVantajosa
             ? '2px solid #16a34a'
             : '1px solid #d1d5db',
-
           borderRadius: '10px',
           padding: '16px',
           marginBottom: '16px',
-
-          background: simplificadaVantajosa
-            ? '#f0fdf4'
-            : '#ffffff'
+          background: simplificadaVantajosa ? '#f0fdf4' : '#ffffff'
         }}
       >
         <h4>
           Declaração simplificada
-
           {simplificadaVantajosa && (
-            <span
-              style={{
-                color: '#16a34a',
-                marginLeft: '8px'
-              }}
-            >
+            <span style={{ color: '#16a34a', marginLeft: '8px' }}>
               (Mais vantajosa)
             </span>
           )}
@@ -149,20 +135,20 @@ function ResultadoComparativo({ resultado }) {
       <p>
         <strong>Modalidade mais vantajosa:</strong>{' '}
         <span style={{ color: '#2563eb' }}>
-          {resultado.pf.modalidadeMaisVantajosa}
+          {dados.pf.modalidadeMaisVantajosa}
         </span>
       </p>
 
       <p>
         <strong>Economia obtida:</strong>{' '}
         <span style={{ color: '#16a34a' }}>
-          {formatarMoeda(resultado.pf.economia)}
+          {formatarMoeda(dados.pf.economia)}
         </span>
       </p>
 
       <p>
         <strong>Total PF:</strong>{' '}
-        {formatarMoeda(resultado.pf.totalTributos)}
+        {formatarMoeda(dados.pf.totalTributos)}
       </p>
 
       <hr style={{ margin: '20px 0' }} />
@@ -171,32 +157,32 @@ function ResultadoComparativo({ resultado }) {
 
       <p>
         <strong>Pró-labore:</strong>{' '}
-        {formatarMoeda(resultado.pj.proLabore)}
+        {formatarMoeda(dados.pj.proLabore)}
       </p>
 
       <p>
         <strong>DAS:</strong>{' '}
-        {formatarMoeda(resultado.pj.das)}
+        {formatarMoeda(dados.pj.das)}
       </p>
 
       <p>
         <strong>INSS sócio:</strong>{' '}
-        {formatarMoeda(resultado.pj.inssSocio)}
+        {formatarMoeda(dados.pj.inssSocio)}
       </p>
 
       <p>
         <strong>CPP:</strong>{' '}
-        {formatarMoeda(resultado.pj.cpp)}
+        {formatarMoeda(dados.pj.cpp)}
       </p>
 
       <p>
         <strong>IRRF pró-labore:</strong>{' '}
-        {formatarMoeda(resultado.pj.irrf)}
+        {formatarMoeda(dados.pj.irrf)}
       </p>
 
       <p>
         <strong>Total PJ:</strong>{' '}
-        {formatarMoeda(resultado.pj.totalTributos)}
+        {formatarMoeda(dados.pj.totalTributos)}
       </p>
 
       <hr style={{ margin: '20px 0' }} />
@@ -204,21 +190,21 @@ function ResultadoComparativo({ resultado }) {
       <p>
         <strong>Melhor opção geral:</strong>{' '}
         <span style={{ color: '#2563eb' }}>
-          {resultado.melhorOpcao}
+          {dados.melhorOpcao}
         </span>
       </p>
 
       <p>
         <strong>Economia geral:</strong>{' '}
         <span style={{ color: '#16a34a' }}>
-          {formatarMoeda(resultado.economiaGeral)}
+          {formatarMoeda(dados.economiaGeral)}
         </span>
       </p>
 
       <div style={{ marginTop: '24px' }}>
         <button
           type="button"
-          onClick={() => gerarPdfComparativo(resultado)}
+          onClick={() => gerarPdfComparativo(dados)}
           style={{
             backgroundColor: '#059669',
             color: '#ffffff',

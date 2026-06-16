@@ -73,4 +73,14 @@ export function removerToken() {
   localStorage.removeItem('token');
 }
 
+export function listarHistorico() {
+  const token = localStorage.getItem('token');
+
+  return api.get('/calculos', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+}
+
 export default api;

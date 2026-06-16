@@ -12,6 +12,14 @@ import {
 const LIMITE_MENSAGEM_NAF = 500;
 const LIMITE_RENDA = 15000;
 
+function obterMensagemErro(error) {
+  return (
+    error?.response?.data?.erro ||
+    error?.response?.data?.message ||
+    'Não foi possível concluir a operação. Verifique os dados e tente novamente.'
+  );
+}
+
 function FormCalculadora() {
   const [form, setForm] = useState({
     renda: '',
@@ -25,9 +33,18 @@ function FormCalculadora() {
   const [rendaExcedida, setRendaExcedida] = useState(false);
   const [erros, setErros] = useState({});
   const [resultado, setResultado] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [mensagem, setMensagem] = useState(null);
+
+  function limparMensagem() {
+    if (mensagem) {
+      setMensagem(null);
+    }
+  }
 
   function handleChange(event) {
     const { name, value, type, checked } = event.target;
+    limparMensagem();
 
     if (name === 'renda') {
       const valorFormatado = formatarMoedaInput(value);
@@ -40,11 +57,11 @@ function FormCalculadora() {
 
       if (valorDigitado > LIMITE_RENDA) {
         setRendaExcedida(true);
+        setResultado(null);
         setErros((prev) => ({
           ...prev,
           renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
         }));
-        setResultado(null);
       } else {
         setRendaExcedida(false);
         setErros((prev) => ({
@@ -62,11 +79,18 @@ function FormCalculadora() {
         custos: formatarMoedaInput(value)
       }));
 
+      setErros((prev) => ({
+        ...prev,
+        custos: ''
+      }));
+
       return;
     }
 
     if (name === 'mensagemNAF') {
-      if (value.length > LIMITE_MENSAGEM_NAF) return;
+      if (value.length > LIMITE_MENSAGEM_NAF) {
+        return;
+      }
 
       setForm((prev) => ({
         ...prev,
@@ -80,21 +104,56 @@ function FormCalculadora() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
+
+    if (name === 'profissao' || name === 'emailUsuario') {
+      setErros((prev) => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  }
+
+  async function enviarRelatorioPorEmail(resultadoCalculado) {
+    const pdfBase64 = gerarPdfBase64(resultadoCalculado);
+
+    const resposta = await fetch('/api/enviar-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        emailUsuario: form.emailUsuario,
+        pdfBase64,
+        profissao: resultadoCalculado.profissao,
+        mensagemNAF: form.mensagemNAF
+      })
+    });
+
+    const dados = await resposta.json().catch(() => ({}));
+
+    if (!resposta.ok) {
+      throw new Error(dados.erro || 'Erro ao enviar e-mail.');
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
 
-    const rendaNumero = converterMoedaParaNumero(form.renda);
-    const custosNumero = converterMoedaParaNumero(form.custos);
+    if (loading) {
+      return;
+    }
 
-    if (rendaNumero > LIMITE_RENDA) {
+    setMensagem(null);
+
+    const rendaNumero = converterMoedaParaNumero(form.renda);
+
+    if (rendaExcedida || rendaNumero > LIMITE_RENDA) {
       setRendaExcedida(true);
+      setResultado(null);
       setErros((prev) => ({
         ...prev,
         renda: 'A renda mensal não pode ultrapassar R$ 15.000,00.'
       }));
-      setResultado(null);
       return;
     }
 
@@ -103,216 +162,186 @@ function FormCalculadora() {
 
     if (Object.keys(novosErros).some((chave) => novosErros[chave])) {
       setResultado(null);
+      setMensagem({
+        tipo: 'erro',
+        texto: 'Revise os campos destacados antes de calcular.'
+      });
       return;
     }
 
     try {
+      setLoading(true);
+      setResultado(null);
+
       const token = localStorage.getItem('token');
 
-     const response = await api.post(
-  '/calculos/simular',
-  {
-    profissao: form.profissao,
-    renda: rendaNumero,
-    custos: custosNumero
-  },
-  {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
-  }
-);
+      if (!token) {
+        setMensagem({
+          tipo: 'erro',
+          texto: 'Token de autenticação não encontrado. Faça login ou insira o token temporário no localStorage.'
+        });
+        return;
+      }
 
-      setResultado(response.data);
+      const response = await api.post(
+        '/calculos/simular',
+        {
+          profissao: form.profissao,
+          renda: rendaNumero,
+          custos: converterMoedaParaNumero(form.custos)
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      const resultadoCalculado = response.data.resultado;
+      setResultado(resultadoCalculado);
 
       if (form.enviarEmail) {
-        try {
-          const dadosResultado = response.data?.resultado || response.data;
-          const pdfBase64 = gerarPdfBase64(dadosResultado);
-
-          const resposta = await fetch('/api/enviar-email', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              emailUsuario: form.emailUsuario,
-              pdfBase64,
-              profissao: form.profissao
-            })
-          });
-
-          const dados = await resposta.json();
-
-          if (!resposta.ok) {
-            console.error('Erro ao enviar e-mail:', dados);
-            alert('O cálculo foi realizado, mas houve erro ao enviar o e-mail.');
-            return;
-          }
-
-          alert('Cálculo realizado e e-mail enviado com sucesso.');
-        } catch (error) {
-          console.error('Erro ao enviar e-mail:', error);
-          alert('Cálculo realizado, mas não foi possível enviar o e-mail.');
-        }
+        await enviarRelatorioPorEmail(resultadoCalculado);
+        setMensagem({
+          tipo: 'sucesso',
+          texto: 'Calculo realizado e e-mail enviado com sucesso.'
+        });
+      } else {
+        setMensagem({
+          tipo: 'sucesso',
+          texto: 'Calculo realizado com sucesso.'
+        });
       }
     } catch (error) {
       console.error(error);
 
-      alert(
-        error.response?.data?.erro ||
-        error.message ||
-        'Erro ao realizar cálculo.'
-      );
-
       setResultado(null);
+      setMensagem({
+        tipo: 'erro',
+        texto: obterMensagemErro(error)
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
-        <div>
-          <label>Renda mensal (valor bruto)</label>
+      {mensagem && (
+        <div className={`mensagem ${mensagem.tipo}`} role="status">
+          {mensagem.texto}
+        </div>
+      )}
 
+      <form className="form-calculadora" onSubmit={handleSubmit}>
+        <div className="campo-formulario">
+          <label htmlFor="renda">Renda mensal (valor bruto)</label>
           <input
+            id="renda"
             type="text"
             name="renda"
             value={form.renda}
             onChange={handleChange}
             placeholder="R$ 0,00"
             inputMode="numeric"
-            style={{
-              border: erros.renda ? '1px solid red' : '1px solid #ccc'
-            }}
+            aria-invalid={Boolean(erros.renda)}
           />
-
-          <small
-            style={{
-              display: 'block',
-              marginTop: '-10px',
-              marginBottom: '12px',
-              color: '#6b7280'
-            }}
-          >
-            Limite máximo: R$ 15.000,00
-          </small>
-
-          {erros.renda && <p style={{ color: 'red' }}>{erros.renda}</p>}
+          <small>Limite máximo: R$ 15.000,00</small>
+          {erros.renda && <p className="erro-campo">{erros.renda}</p>}
         </div>
 
-        <div>
-          <label>Total de custos mensais</label>
-
+        <div className="campo-formulario">
+          <label htmlFor="custos">Total de custos mensais</label>
           <input
+            id="custos"
             type="text"
             name="custos"
             value={form.custos}
             onChange={handleChange}
             placeholder="R$ 0,00"
             inputMode="numeric"
+            aria-invalid={Boolean(erros.custos)}
           />
-
-          {erros.custos && <p style={{ color: 'red' }}>{erros.custos}</p>}
+          {erros.custos && <p className="erro-campo">{erros.custos}</p>}
         </div>
 
-        <div>
-          <label>Profissão</label>
-
+        <div className="campo-formulario">
+          <label htmlFor="profissao">Profissão</label>
           <select
+            id="profissao"
             name="profissao"
             value={form.profissao}
             onChange={handleChange}
+            aria-invalid={Boolean(erros.profissao)}
           >
             <option value="">Selecione</option>
-
             {PROFISSOES.map((profissao) => (
               <option key={profissao.value} value={profissao.value}>
                 {profissao.label}
               </option>
             ))}
           </select>
-
-          {erros.profissao && <p style={{ color: 'red' }}>{erros.profissao}</p>}
+          {erros.profissao && <p className="erro-campo">{erros.profissao}</p>}
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label>
-            <input
-              type="checkbox"
-              name="enviarEmail"
-              checked={form.enviarEmail}
-              onChange={handleChange}
-              style={{
-                width: 'auto',
-                marginRight: '8px'
-              }}
-            />
-
-            Desejo receber os cálculos por e-mail
-          </label>
-        </div>
+        <label className="checkbox-email">
+          <input
+            type="checkbox"
+            name="enviarEmail"
+            checked={form.enviarEmail}
+            onChange={handleChange}
+          />
+          <span>Desejo receber os cálculos por e-mail</span>
+        </label>
 
         {form.enviarEmail && (
-          <div>
-            <label>E-mail do usuário</label>
-
+          <div className="campo-formulario">
+            <label htmlFor="emailUsuario">E-mail do usuário</label>
             <input
+              id="emailUsuario"
               type="email"
               name="emailUsuario"
               value={form.emailUsuario}
               onChange={handleChange}
+              placeholder="exemplo@email.com"
+              aria-invalid={Boolean(erros.emailUsuario)}
             />
-
             {erros.emailUsuario && (
-              <p style={{ color: 'red' }}>{erros.emailUsuario}</p>
+              <p className="erro-campo">{erros.emailUsuario}</p>
             )}
           </div>
         )}
 
-        <div>
-          <label>Mensagem para o NAF</label>
-
+        <div className="campo-formulario">
+          <label htmlFor="mensagemNAF">Mensagem para o NAF</label>
           <textarea
+            id="mensagemNAF"
             name="mensagemNAF"
             value={form.mensagemNAF}
             onChange={handleChange}
             rows="4"
-            style={{
-              width: '100%',
-              padding: '10px',
-              marginTop: '8px',
-              marginBottom: '8px'
-            }}
             placeholder="Digite sua dúvida ou mensagem"
+            aria-invalid={Boolean(erros.mensagemNAF)}
           />
-
-          <small
-            style={{
-              display: 'block',
-              marginBottom: '12px',
-              color: '#6b7280'
-            }}
-          >
+          <small>
             Máximo de {LIMITE_MENSAGEM_NAF} caracteres.{' '}
             {form.mensagemNAF.length}/{LIMITE_MENSAGEM_NAF}
           </small>
-
           {erros.mensagemNAF && (
-            <p style={{ color: 'red' }}>{erros.mensagemNAF}</p>
+            <p className="erro-campo">{erros.mensagemNAF}</p>
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={rendaExcedida}
-          style={{
-            opacity: rendaExcedida ? 0.6 : 1,
-            cursor: rendaExcedida ? 'not-allowed' : 'pointer'
-          }}
-        >
-          Calcular
+        <button type="submit" disabled={rendaExcedida || loading}>
+          {loading ? 'Calculando...' : 'Calcular'}
         </button>
+
+        {loading && (
+          <div className="loading-calculo" aria-live="polite">
+            <span className="spinner" />
+            Processando cálculo no backend...
+          </div>
+        )}
       </form>
 
       <ResultadoComparativo resultado={resultado} />

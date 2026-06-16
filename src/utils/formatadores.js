@@ -37,3 +37,22 @@ export function converterMoedaParaNumero(valorFormatado) {
       .replace(',', '.')
   );
 }
+
+export function capitalizarTexto(texto) {
+  if (!texto) return '';
+
+  return texto
+    .toLowerCase()
+    .replace(/\b\w/g, letra => letra.toUpperCase());
+}
+
+export function formatarProfissao(profissao) {
+  const profissaoMap = {
+    psicologo: 'Psicólogo',
+    psicólogo: 'Psicólogo',
+    arquiteto: 'Arquiteto',
+    advogado: 'Advogado'
+  };
+
+  return profissaoMap[String(profissao || '').toLowerCase()] || profissao;
+}

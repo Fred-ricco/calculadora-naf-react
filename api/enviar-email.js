@@ -2,6 +2,15 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function limparNomeArquivo(texto) {
+  return String(texto || 'naf')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .toLowerCase();
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({
@@ -10,7 +19,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { emailUsuario, profissao, pdfBase64 } = req.body;
+    const {
+      emailUsuario,
+      profissao,
+      pdfBase64,
+      mensagemNAF
+    } = req.body;
 
     if (!emailUsuario) {
       return res.status(400).json({
@@ -24,7 +38,21 @@ export default async function handler(req, res) {
       });
     }
 
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({
+        erro: 'Chave RESEND_API_KEY não configurada.'
+      });
+    }
+
     const remetente = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+    const profissaoTexto = profissao || 'não informada';
+
+    const mensagemTexto = mensagemNAF
+      ? `
+        <p><strong>Mensagem enviada ao NAF:</strong></p>
+        <p>${mensagemNAF}</p>
+      `
+      : '';
 
     const resposta = await resend.emails.send({
       from: remetente,
@@ -32,13 +60,23 @@ export default async function handler(req, res) {
       subject: 'Resultado do comparativo tributário - Calculadora NAF',
       html: `
         <h2>Calculadora Tributária NAF</h2>
+
         <p>Olá!</p>
-        <p>Segue em anexo o resultado do comparativo tributário referente à profissão: <strong>${profissao}</strong>.</p>
-        <p>Este relatório foi gerado automaticamente pela Calculadora Tributária NAF.</p>
+
+        <p>
+          Segue em anexo o relatório do comparativo tributário referente à profissão:
+          <strong>${profissaoTexto}</strong>.
+        </p>
+
+        ${mensagemTexto}
+
+        <p>
+          Este relatório foi gerado automaticamente pela Calculadora Tributária NAF.
+        </p>
       `,
       attachments: [
         {
-          filename: comparativo-tributario-${profissao || 'naf'}.pdf,
+          filename: `comparativo-tributario-${limparNomeArquivo(profissaoTexto)}.pdf`,
           content: pdfBase64
         }
       ]

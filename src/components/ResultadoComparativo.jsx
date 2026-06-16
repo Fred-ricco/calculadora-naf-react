@@ -11,6 +11,10 @@ function obterValor(objeto, caminho, valorPadrao = 0) {
   }, objeto) ?? valorPadrao;
 }
 
+function formatarEnquadramentoPJ(anexo) {
+  return anexo ? `Simples Nacional - ${anexo}` : '-';
+}
+
 function ResultadoComparativo({ resultado }) {
   if (!resultado) {
     return null;
@@ -136,8 +140,8 @@ function ResultadoComparativo({ resultado }) {
 
         <div className="resumo-simulacao">
           <p className="linha-resultado">
-            <strong>Anexo</strong>
-            <span>{pj.anexo || '-'}</span>
+            <strong>Enquadramento tributário PJ</strong>
+            <span>{formatarEnquadramentoPJ(pj.anexo)}</span>
           </p>
 
           <p className="linha-resultado">

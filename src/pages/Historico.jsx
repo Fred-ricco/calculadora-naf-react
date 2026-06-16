@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { listarHistorico } from '../services/api';
-import { formatarMoeda } from '../utils/formatadores';
+import { formatarMoeda, formatarProfissao } from '../utils/formatadores';
+
+function normalizarProfissao(profissao) {
+  return String(profissao || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
 
 function obterMelhorOpcao(calculo) {
   const totalPF = calculo.resultadoPF?.totalTributos;
   const totalPJ = calculo.resultadoPJ?.totalTributos;
 
   if (totalPF == null || totalPJ == null) {
-    return 'Nao informado';
+    return 'Não informado';
   }
 
   return totalPJ < totalPF ? 'PJ' : 'PF';
@@ -15,7 +23,7 @@ function obterMelhorOpcao(calculo) {
 
 function formatarData(data) {
   if (!data) {
-    return 'Nao informada';
+    return 'Não informada';
   }
 
   return new Date(data).toLocaleDateString('pt-BR');
@@ -37,7 +45,7 @@ function Historico() {
 
         setHistorico(resposta.data || []);
       } catch (error) {
-        setErro('Nao foi possivel carregar o historico de calculos.');
+        setErro('Não foi possível carregar o histórico de cálculos.');
       } finally {
         setCarregando(false);
       }
@@ -52,29 +60,29 @@ function Historico() {
     }
 
     return historico.filter(
-      (calculo) => calculo.profissao === profissaoFiltro
+      (calculo) => normalizarProfissao(calculo.profissao) === profissaoFiltro
     );
   }, [historico, profissaoFiltro]);
 
   return (
     <section className="historico-container">
-      <h2>Historico de calculos</h2>
+      <h2>Histórico de cálculos</h2>
 
       <label>
-        Filtrar por profissao
+        Filtrar por profissão
         <select
           value={profissaoFiltro}
           onChange={(event) => setProfissaoFiltro(event.target.value)}
         >
           <option value="">Todas</option>
-          <option value="Psicólogo">Psicologo</option>
-          <option value="Arquiteto">Arquiteto</option>
-          <option value="Advogado">Advogado</option>
+          <option value="psicologo">Psicólogo</option>
+          <option value="arquiteto">Arquiteto</option>
+          <option value="advogado">Advogado</option>
         </select>
       </label>
 
       {carregando && (
-        <p>Carregando historico...</p>
+        <p>Carregando histórico...</p>
       )}
 
       {erro && (
@@ -82,14 +90,14 @@ function Historico() {
       )}
 
       {!carregando && !erro && historicoFiltrado.length === 0 && (
-        <p>Nenhum calculo encontrado.</p>
+        <p>Nenhum cálculo encontrado.</p>
       )}
 
       {!carregando && !erro && historicoFiltrado.length > 0 && (
         <div className="historico-lista">
           {historicoFiltrado.map((calculo) => (
             <article className="historico-item" key={calculo.id}>
-              <h3>{calculo.profissao}</h3>
+              <h3>{formatarProfissao(calculo.profissao)}</h3>
 
               <p>
                 <strong>Renda:</strong> {formatarMoeda(calculo.renda)}
@@ -100,7 +108,7 @@ function Historico() {
               </p>
 
               <p>
-                <strong>Melhor opcao:</strong> {obterMelhorOpcao(calculo)}
+                <strong>Melhor opção:</strong> {obterMelhorOpcao(calculo)}
               </p>
 
               <p>

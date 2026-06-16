@@ -1,7 +1,5 @@
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 function limparNomeArquivo(texto) {
   return String(texto || 'naf')
     .normalize('NFD')
@@ -38,12 +36,15 @@ export default async function handler(req, res) {
       });
     }
 
-    if (!process.env.RESEND_API_KEY) {
+    const apiKey = process.env.RESEND_API_KEY;
+
+    if (!apiKey) {
       return res.status(500).json({
         erro: 'Chave RESEND_API_KEY não configurada.'
       });
     }
 
+    const resend = new Resend(apiKey);
     const remetente = process.env.EMAIL_FROM || 'onboarding@resend.dev';
     const profissaoTexto = profissao || 'não informada';
 
@@ -54,9 +55,9 @@ export default async function handler(req, res) {
       `
       : '';
 
-    const resposta = await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: remetente,
-      to: emailUsuario,
+      to: [emailUsuario],
       subject: 'Resultado do comparativo tributário - Calculadora NAF',
       html: `
         <h2>Calculadora Tributária NAF</h2>
@@ -82,9 +83,18 @@ export default async function handler(req, res) {
       ]
     });
 
+    if (error) {
+      const mensagemErro =
+        error.message ||
+        error.name ||
+        JSON.stringify(error);
+
+      throw new Error(mensagemErro);
+    }
+
     return res.status(200).json({
       mensagem: 'E-mail enviado com sucesso.',
-      resposta
+      resposta: data
     });
   } catch (error) {
     console.error('Erro ao enviar e-mail:', error);

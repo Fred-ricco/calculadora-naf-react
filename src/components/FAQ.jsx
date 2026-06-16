@@ -20,7 +20,9 @@ const categorias = [
     perguntas: [
       'Os cálculos são oficiais?',
       'Quais profissões são aceitas?',
-      'O que significa PF e PJ?'
+      'O que significa PF e PJ?',
+      'O que significa DAS?',
+      'O que significa CPP?'
     ]
   },
   {
@@ -60,6 +62,10 @@ const respostas = {
     'Nesta versão, a calculadora aceita Psicólogo, Arquiteto e Advogado.',
   'O que significa PF e PJ?':
     'PF significa Pessoa Física. PJ significa Pessoa Jurídica. A calculadora compara os tributos estimados entre essas duas formas de atuação.',
+  'O que significa DAS?':
+    'DAS significa Documento de Arrecadação do Simples Nacional. É a guia usada para recolher os tributos de empresas optantes pelo Simples Nacional.',
+  'O que significa CPP?':
+    'CPP significa Contribuição Previdenciária Patronal. É a contribuição da empresa para a Previdência Social e pode estar incluída no DAS ou ser calculada separadamente, conforme o anexo tributário.',
   'Posso gerar PDF?':
     'Sim. Após realizar a simulação, o sistema permite baixar um relatório em PDF com os dados do comparativo.',
   'Consigo enviar por e-mail?':

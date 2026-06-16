@@ -11,11 +11,17 @@ import {
 
 const LIMITE_MENSAGEM_NAF = 500;
 const LIMITE_RENDA = 15000;
+const EMAIL_API_URL =
+  import.meta.env.VITE_EMAIL_API_URL ||
+  (import.meta.env.DEV
+    ? 'http://localhost:3001/email/enviar'
+    : '/api/enviar-email');
 
 function obterMensagemErro(error) {
   return (
     error?.response?.data?.erro ||
     error?.response?.data?.message ||
+    error?.message ||
     'Não foi possível concluir a operação. Verifique os dados e tente novamente.'
   );
 }
@@ -116,7 +122,7 @@ function FormCalculadora() {
   async function enviarRelatorioPorEmail(resultadoCalculado) {
     const pdfBase64 = gerarPdfBase64(resultadoCalculado);
 
-    const resposta = await fetch('/api/enviar-email', {
+    const resposta = await fetch(EMAIL_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -129,10 +135,20 @@ function FormCalculadora() {
       })
     });
 
-    const dados = await resposta.json().catch(() => ({}));
+    const tipoConteudo = resposta.headers.get('content-type') || '';
+    const corpoResposta = tipoConteudo.includes('application/json')
+      ? await resposta.json().catch(() => ({}))
+      : await resposta.text().catch(() => '');
 
     if (!resposta.ok) {
-      throw new Error(dados.erro || 'Erro ao enviar e-mail.');
+      const mensagemErro =
+        corpoResposta?.detalhes ||
+        corpoResposta?.erro ||
+        corpoResposta?.message ||
+        (typeof corpoResposta === 'string' ? corpoResposta.trim() : '') ||
+        `Erro ao enviar e-mail. Status HTTP ${resposta.status}.`;
+
+      throw new Error(mensagemErro);
     }
   }
 
@@ -201,15 +217,23 @@ function FormCalculadora() {
       setResultado(resultadoCalculado);
 
       if (form.enviarEmail) {
-        await enviarRelatorioPorEmail(resultadoCalculado);
-        setMensagem({
-          tipo: 'sucesso',
-          texto: 'Calculo realizado e e-mail enviado com sucesso.'
-        });
+        try {
+          await enviarRelatorioPorEmail(resultadoCalculado);
+          setMensagem({
+            tipo: 'sucesso',
+            texto: 'Cálculo realizado e e-mail enviado com sucesso.'
+          });
+        } catch (emailError) {
+          console.error('Erro ao enviar e-mail:', emailError);
+          setMensagem({
+            tipo: 'erro',
+            texto: `Cálculo realizado, mas não foi possível enviar o e-mail. ${obterMensagemErro(emailError)}`
+          });
+        }
       } else {
         setMensagem({
           tipo: 'sucesso',
-          texto: 'Calculo realizado com sucesso.'
+          texto: 'Cálculo realizado com sucesso.'
         });
       }
     } catch (error) {

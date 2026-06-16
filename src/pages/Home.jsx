@@ -6,20 +6,30 @@ import Historico from './Historico';
 
 function Home() {
   const [telaAtual, setTelaAtual] = useState('calculadora');
+
   return (
     <main className="app-container">
       <div className="card">
-    
-        <img src={logo} alt="Logo Ciências Contábeis" className="logo" />
+        <header className="app-hero">
+          <div className="brand-lockup">
+            <img src={logo} alt="Logo Ciências Contábeis" className="logo" />
 
-        <div className="header-text">
-          <h1>Calculadora Web PJ e PF do NAF</h1>
-          <p>Comparar encargos tributários entre Pessoa Física e Pessoa Jurídica.</p>
-        </div>
+            <div className="header-text">
+              <span className="app-eyebrow">Núcleo de Apoio Contábil e Fiscal</span>
+              <h1>Calculadora PF x PJ</h1>
+              <p>
+                Compare encargos tributários, gere relatórios em PDF e acompanhe
+                simulações salvas em uma experiência mais clara.
+              </p>
+            </div>
+          </div>
+        </header>
 
         <div className="menu-telas">
           <button
             type="button"
+            className={telaAtual === 'calculadora' ? 'ativo' : ''}
+            aria-pressed={telaAtual === 'calculadora'}
             onClick={() => setTelaAtual('calculadora')}
           >
             Calculadora
@@ -27,9 +37,11 @@ function Home() {
 
           <button
             type="button"
+            className={telaAtual === 'historico' ? 'ativo' : ''}
+            aria-pressed={telaAtual === 'historico'}
             onClick={() => setTelaAtual('historico')}
           >
-            Historico
+            Histórico
           </button>
         </div>
 

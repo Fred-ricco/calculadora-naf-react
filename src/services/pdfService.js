@@ -7,6 +7,10 @@ function formatarMoeda(valor) {
   });
 }
 
+function formatarEnquadramentoPJ(anexo) {
+  return anexo ? `Simples Nacional - ${anexo}` : '-';
+}
+
 function escreverLinha(doc, label, valor, x, y) {
   doc.setFont('helvetica', 'bold');
   doc.text(label, x, y);
@@ -158,8 +162,8 @@ escreverLinha(
     'Pessoa Jurídica',
     [
       {
-        label: 'Anexo',
-        valor: pj.anexo || '-'
+        label: 'Enquadramento PJ',
+        valor: formatarEnquadramentoPJ(pj.anexo)
       },
       {
         label: 'DAS',
@@ -189,17 +193,17 @@ escreverLinha(
 
   doc.setFillColor(236, 253, 245);
   doc.setDrawColor(34, 197, 94);
-  doc.roundedRect(15, 260, 180, 20, 3, 3, 'FD');
+  doc.roundedRect(15, 266, 180, 20, 3, 3, 'FD');
 
   doc.setTextColor(22, 101, 52);
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text(`Melhor opção geral: ${resultado.melhorOpcao || '-'}`, 20, 270);
+  doc.text(`Melhor opção geral: ${resultado.melhorOpcao || '-'}`, 20, 274);
 
   doc.text(
     `Economia estimada: ${formatarMoeda(resultado.economiaGeral)}`,
     20,
-    277
+    281
   );
 
   doc.setTextColor(90, 90, 90);
@@ -208,7 +212,7 @@ escreverLinha(
   doc.text(
     'Relatório gerado automaticamente para fins acadêmicos pelo sistema Calculadora Tributária NAF.',
     105,
-    292,
+    294,
     { align: 'center' }
   );
 
@@ -231,7 +235,8 @@ const nomeProfissao = String(
 
 export function gerarPdfBase64(resultado) {
   const doc = gerarDocumento(resultado);
-  return doc.output('datauristring');
+  const dataUri = doc.output('datauristring');
+  return dataUri.split(',')[1] || dataUri;
 }
 
 import { capitalizarTexto } from '../utils/formatadores';

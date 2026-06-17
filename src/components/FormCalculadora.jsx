@@ -11,11 +11,11 @@ import {
 
 const LIMITE_MENSAGEM_NAF = 500;
 const LIMITE_RENDA = 15000;
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://calculadora-naf-react-backend.onrender.com';
 const EMAIL_API_URL =
-  import.meta.env.VITE_EMAIL_API_URL ||
-  (import.meta.env.DEV
-    ? 'http://localhost:3001/email/enviar'
-    : '/api/enviar-email');
+  import.meta.env.VITE_EMAIL_API_URL || `${API_URL}/email/enviar`;
 
 function obterMensagemErro(error) {
   return (
